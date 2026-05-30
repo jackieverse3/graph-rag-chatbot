@@ -1,0 +1,12 @@
+Apple was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne in 1976.
+Apple develooped the Macintosh Computer and later introduced the iPhone,
+which runs on the iOS operating system. Google, founded by Larry Page and 
+Sergey Brin in 1998, developed the Android operating system to compete
+with iOS. Google also acquired YouTube in 2006 to expand its video services.
+
+Microsoft, founded by Bill Gates and Paul Allen, developed the Windows
+operating system. Microsoft partnered with OpenAI, investing billions of
+dollars to support artificial intelligence development. OpenAI, led by CEO 
+Sam Altman, developed the popular conversational AI model known as 
+ChatGPT. Microsoft integrated ChatGPT technology into its Bing search
+engine to challenge Google's dominance in search.
