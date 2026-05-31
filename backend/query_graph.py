@@ -31,7 +31,7 @@ def get_graph_context(entities: list) -> str:
     if not entities:
         return ""
 
-    driver = GraphDatabase.driver(NEO4J_URI,NEO4J_PASSWORD)   
+    driver = GraphDatabase.driver(NEO4J_URI,auth = (NEO4J_USER,NEO4J_PASSWORD))   
     facts = [] 
 
     try:
@@ -55,23 +55,21 @@ def get_graph_context(entities: list) -> str:
 
     return "\n".join(facts)    
 
-def answer_questions(question: str)-> str:   
-    """Main Graph RAG pipeline execution."""
+def answer_questions(question: str)->dict:
+    """Main Graph RAG pipeline execution. Returns both the answer and the 
+    retrieved context. """
 
-    # Step 1 : Find entities in user query
-    entities = extract_entities(question) 
-    print(f"Extracted Entities: {entities}")
-
-    # Step 2 : Grab context path from Neo4j
+    entities = extract_entities (question)
     context = get_graph_context(entities)
-    print(f"Retrieved Graph Context:\n{context}\n")
 
-    # Step 3 : Run generated facts through generator LLM
-    prompt = ANSWER_GENERATOR_PROMPT.format(context=context, question= question)
-    answer= query_ollama(prompt,json_mode=False)
-    return answer.strip()
+    # If context is empty , let the generator LLM handle it, but keep track of it, 
 
+    prompt = ANSWER_GENERATOR_PROMPT.format(context=context or "No context found.", question =  question)
+    answer = query_ollama(prompt, json_mode = False )
 
+    return {
+        "answer" : answer.strip(),
+        "context" : context if context elese "No facts were found in the 
+        database for these entities. "
 
-
-
+    }
