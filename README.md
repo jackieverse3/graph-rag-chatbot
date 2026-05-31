@@ -1,4 +1,3 @@
-```markdown
 # Graph RAG Chatbot (Prototype)
 
 This is a minimal Graph Retrieval-Augmented Generation (Graph RAG) prototype that extracts structured entity relationships from a text document using a local LLM, stores them in Neo4j, and queries them to answer user questions.
