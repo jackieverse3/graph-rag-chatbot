@@ -19,24 +19,48 @@ Text to extract from :
 """
 
 ENTITY_EXTRACT_PROMPT=  """ You are an AI assistant that extracts entity names from a user question.
-Identify the primary entities (such as people, organizations, concepts, or things) mentioned in the question.
-Return ONLY a valid JSON array of strings containing the entity names. Do not write conversational text or markdown formatting.
+Identify ALL the primary entities (people, organizations, products or concepts) mentioned in the question.
+Always extract the subject being asked about, even in "who is X?" or "what is X?" questions.
+Return ONLY a valid JSON array of strings. Do not write any explanation or markdown.
 
-Example Question : What companies is Elon Musk involved with ? 
-Example Output : ["Elon Musk"] 
+Examples:
+Question : What companies is Elon Musk involved with ? 
+Output : ["Elon Musk"] 
+
+Question : Who is Sam Altman ?
+Output : ["Sam Altman"]
+
+Question : Who founded Apple and what did they build?
+Output : ["Apple"]
+
+Question : What is the relationship between Microsoft and OpenAI?
+Output : ["Microsoft","OpenAI"]
+
+Question : What operating system does the iPhone run on ?
+Output : ["IPhone"]
+
+
 
 Question :
 {question}
 """
 
-ANSWER_GENERATOR_PROMPT = """ You are a helpful chatbot. Answer the question using ONLY the provided facts from knowledge graph.
-If the context does not contain the answer, say exactly: " I don't know from the graph."
+ANSWER_GENERATOR_PROMPT = """ You are a factual assistant. Answer the question using ONLY the provided knowledge graph facts below.
+DO NOT include any reasoning, analysis , thinking , or preamble.
+Output ONLY the final answer as one or two clean sentences.
+If the facts do not contain enough information to answer, output exactly: I don't know from the graph.
 
-Context:
-{context} 
+Knowledge Graph Facts:
+{context}
 
-Question
-{question}
+Question : {question}
 
-Answer:
-"""
+Answer :"""
+
+GENERAL_FALLBACK_PROMPT = """ You are a helpful and friendly assistant. The user asked a question that could not be answered from the knowledge graph.
+Answer the question conversationally in one or two clear sentences, as you would in a normal chat.
+Do NOT mention the knowledge graph, databases, or your limitations. Just answer naturally.
+
+Question : {question}
+
+Answer: """

@@ -4,10 +4,14 @@ import re
 from neo4j import GraphDatabase
 from backend.ollama_client import query_ollama
 from backend.prompts import GRAPH_BUILD_PROMPT
+from dotenv import load_dotenv
 
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "password"
+load_dotenv()
+
+NEO4J_URI = os.getenv("NEO4J_URI","bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER","neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD","password")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE","neo4j")
 
 def sanitize_relation(relation: str)-> str:
     """ Formats relationship strings to be valid Cypher relationship types."""
@@ -15,18 +19,22 @@ def sanitize_relation(relation: str)-> str:
     cleaned = cleaned.strip().replace(' ','_').upper()
     return cleaned if cleaned else "RELATED_TO"
 
-def build_graph_from_file(file_path: str)-> bool:
-    """ Reads a file, extracts relationships via LLM , and inserts them into Neo4j."""
-    if not os.path.exists(file_path):
-        print(f"Error: File {file_path} not found.")
+def build_graph_from_text(text: str)-> bool:
+    """ Extracts relationships from a text string via LLM, and inserts them into Neo4j."""
+    if not text or not text.strip():
+        print("Error: Empty text provided.")
         return False
 
-    with open(file_path, "r", encodings="utf-8") as f:
-        text = f.read()
 
     # Get data from LLM
     prompt = GRAPH_BUILD_PROMPT.format(text=text)
         response_text = query_ollama(prompt, json_mode= True )
+
+    try:
+        response_text = query_ollama(prompt, json_mode=True)
+    except Exception as e:
+        print(f"LLm call failed during graph build: {e}")
+        return False
 
     # Clean LLM response if it accidentally wrapped JSON in markdown formatting
     cleaned_response = response_text.strip()
@@ -46,7 +54,7 @@ def build_graph_from_file(file_path: str)-> bool:
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER,NEO4J_PASSWORD))    
 
     try:
-        with driver.session() as session:
+        with driver.session(database=NEO4J_DATABASE) as session:
             # For this MVP, we clear previous nodes before writing a new graph
             session.run("MATCH (n) DETACH DELETE n")
             print("Database cleared. Writing new relationships...")
@@ -71,4 +79,17 @@ def build_graph_from_file(file_path: str)-> bool:
         return False
     finally:
         driver.close()       
+
+
+def build_graph_from_file(file_path: str) -> bool;
+    """ Reads a file, extracts relationships via LLM, and inserts them into Neo4j."""
+    if not os.path.exists(file_path):
+        print(f"Error: File {file_path} not found.")
+        return False
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        text=f.read()
+
+    return build_graph_from_text(text)
+
 
