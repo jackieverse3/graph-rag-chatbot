@@ -1,16 +1,11 @@
 import json
 import re
+
 from neo4j import GraphDatabase
+from backend.config import NEO4J_DATABASE, NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER
 from backend.ollama_client import query_ollama
-from backend.prompts import ENTITY_EXTRACT_PROMPT, ANSWER_GENERATOR_PROMPT, GENERAL_FALLBACK_PROMPT
-from dotenv import load_dotenv
+from backend.prompts import ANSWER_GENERATOR_PROMPT, ENTITY_EXTRACT_PROMPT, GENERAL_FALLBACK_PROMPT
 
-load_dotenv()
-
-NEO4J_URI = os.getenv("NEO4J_URI","bolt://localhost:7687")
-NEO4J_USER = os.getenv("NEO4J_USER","neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD","password")
-NEO4J_DATABASE = os.getenv("NEO4J_DATABASE","neo4j")
 
 # Patterns that indicate leaked reasoning/thinking garbage from the model
 _GARBAGE_PATTERNS = re.compile (

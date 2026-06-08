@@ -1,4 +1,4 @@
-const BACKEND_API = "http://127.0.0.1:8000";
+const BACKEND_API = (window.GRAPHMIND_CONFIG && window.GRAPHMIND_CONFIG.API_URL) || "http://127.0.0.1:8000";
 
 // Element selectors
 const buildBtn = document.getElementById("build-btn");

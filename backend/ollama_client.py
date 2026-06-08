@@ -1,13 +1,6 @@
-import os
 import requests
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# Cloud or local endpoint
-OLLAMA_URL = os.getenv("OLLAMA_URL","https://ollama.com/api/generate")
-MODEL_NAME = os.getenv("MODEL_NAME","gpt-oss:120b-cloud")
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY","")
+from backend.config import MODEL_NAME, OLLAMA_API_KEY, OLLAMA_URL
 
 def query_ollama (prompt:str,json_mode: bool = False,think: bool = False) ->str:
 """ 
@@ -46,7 +39,7 @@ Args:
         
         if not text and result.get("thinking"):
             thinking = result["thinking"].strip()
-            lines=[l.strip() for l in thinking.split("\n") if l.strip()]
+            lines=[line.strip() for line in thinking.split("\n") if line.strip()]
             text = lines[-1] if lines else ""
             if text:
                 print("Warning: used 'thinking' fallback to extract answer.")

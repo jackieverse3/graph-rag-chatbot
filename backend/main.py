@@ -1,16 +1,30 @@
+import io
 import os
 
 from dotenv import load_dotenv
+
+from fastapi import FastAPI,File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleaware
+from neo4j import GraphDatabase
+from pydantic import BaseModel
+from pypdf import PdfReader
+
+
+from backend.config import CORS_ORIGINS, NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER
+from backend.graph_build import build_graph_from_text
+from backend.query_graph import answer_question
+
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleaware
-from pydantic import BaseModel
-from neo4j import GraphDatabase
-from backend.graph_builder import build_graph_from_file, build_graph_from_text
-from backend.query_graph import answer_question, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-import io 
-from pypdf import PdfReader
+app = FastAPI(title="GraphMind")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def extract_text_from_pdf(pdf_bytes:bytes) -> str:
     pdf_file = io.BytesIO(pdf_bytes)
@@ -23,18 +37,34 @@ def extract_text_from_pdf(pdf_bytes:bytes) -> str:
     return text
 
 
-app = FastAPI(title = "GraphMind")
-
-app.add_middleware(
-    CORSMiddleaware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 class ChatRequest(BaseModel):
     question:str
+
+
+class TextInput(BaseModel):
+    text: str
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready():
+    """Checks Neo4j connectivity for post-deploy verification."""
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    try:
+        driver.verify_connectivity()
+        return {"status": "ok", "neo4j": "connected"}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+    finally:
+        driver.close()
+
+
+
 
 @app.get("/stats")
 def get_stats():
@@ -56,8 +86,6 @@ def get_stats():
     finally:
         driver.close()
 
-class TextInput(BaseModel):
-    text: str
 
 @app.post("/build-graph")
 def build_graph():
@@ -72,10 +100,9 @@ def build_graph():
     if success:
         return {
             "message":"Graph successfully built from default sample",
-            "text":text
+            "text":text,
             }
-    else:
-        raise HTTPException(status_code=500, detail="Graph build failed from sample text.")     
+    raise HTTPException(status_code=500, detail="Graph build failed from sample text.")     
 
 
 @app.post("/build-graph/text")
@@ -90,14 +117,13 @@ def build_graph_text(payload: TextInput):
     if success:
         return {
             "message":"Graph successfully built from custom text",
-            "text": payload.text
+            "text": payload.text,
         }
-    else:
-        raise HTTPException(status_code:500,detail="Graph build from pasted text.")
+    raise HTTPException(status_code:500,detail="Graph build from pasted text.")
 
 @app.post("/build-graph/pdf")
 async def build_graph_from_pdf(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
     # Read content to verify size (1 MB limit)
@@ -108,7 +134,7 @@ async def build_graph_from_pdf(file: UploadFile = File(...)):
     try:
         text = extract_text_from_pdf(content)
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Failed to parse PDF: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to parse PDF: {str(e)}") from e 
     
     if not text.strip():
         raise HTTPException(status_code=400,detail="No readable text could be extracted from the PDF.")
@@ -117,10 +143,9 @@ async def build_graph_from_pdf(file: UploadFile = File(...)):
     if success:
         return {
             "message": "Graph successfully built from PDF content",
-            "text":text
+            "text":text,
         }
-    else:
-        raise HTTPException(status_code=500,detail = "Graph build failed from PDF content.")
+    raise HTTPException(status_code=500,detail = "Graph build failed from PDF content.")
 
         
 
@@ -129,6 +154,4 @@ def chat(request: ChatRequest):
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty. ")
 
-    # Calls our updated pipeline that returns answer & context.
-    answer= answer_question(request.question)    
-    return result 
+return answer_question(request.question)

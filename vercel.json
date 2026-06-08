@@ -1,0 +1,6 @@
+{
+    "$schema": "https://openai.vercel.sh/vercel.json",
+    "buildCommand": "node scripts/generate-frontend-config.js",
+    "outputDirectory":"frontend",
+    "framework": null 
+}

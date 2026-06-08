@@ -1,69 +1,94 @@
-# Graph RAG Chatbot (Prototype)
+# GraphMind
 
-This is a minimal Graph Retrieval-Augmented Generation (Graph RAG) prototype that extracts structured entity relationships from a text document using a local LLM, stores them in Neo4j, and queries them to answer user questions.
+GraphMind is a Graph RAG prototype that turns unstructured text into a knowledge graph and lets you ask questions against it. Text is processed with an LLM(via Ollama) to extract entities and relationships,stored in Neo4j, and queried through a simple Web UI.
 
----
+## Features
 
-## 1. Prerequisites
+- Build a graph from sample text, pasted content, or a PDF upload
+- Chat with your knowledge graph and inspect retrieved context.
+- Live Neo4j stats (node and relationship counts)
 
-Before running the application, make sure the following local engines are installed and running:
+## Prerequisites
 
-1. **Ollama**:
-   * Install from [ollama.com](https://ollama.com).
-   * Ensure it is running in your taskbar/menu bar.
-   * Pull the default model from your terminal:
-     ```bash
-     ollama pull llama3
-     ```
+- **Python 3.10+**
+- **Neo4j** running locally (default: `bolt://localhost:7687`)
+- **Ollama** - local instance or Ollama Cloud with an API key
+## Setup
 
-2. **Neo4j**:
-   * Install [Neo4j Desktop](https://neo4j.com/download/) or run Neo4j via Docker.
-   * Create a local DBMS instance.
-   * Set the password to `password` (or match the configuration password inside the Python files).
-   * Start the database and ensure the connection matches standard Bolt port: `bolt://localhost:7687`.
+1. Clone the repository and create a virtual environment:
 
----
-
-## 2. Python Backend Setup
-
-Configure a virtual environment, install the library packages, and launch your API:
-
-1. **Create and Activate Virtual Environment**:
-   * **On Windows**:
-     ```bash
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-   * **On macOS/Linux**:
-     ```bash
-     python -m venv venv
-     source venv/bin/activate
-     ```
-
-2. **Install Package Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Start the FastAPI Server**:
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-   *The server is active when your terminal logs point to `http://127.0.0.1:8000`.*
-
----
-
-## 3. Frontend Setup
-
-1. Open your system's file manager and navigate to the `graph-rag-chatbot/frontend/` folder.
-2. Double-click `index.html` to open it in your web browser. 
-3. *Alternatively*, if using Visual Studio Code, right-click `index.html` and choose **Open with Live Server**.
-
----
-
-## 4. How to Use
-
-1. **Build Graph**: Click the **Build Knowledge Graph** button in the sidebar. This reads `data/sample.txt`, runs LLM extraction, wipes old database records, and populates your Neo4j instance.
-2. **Review Metrics**: Verify that the sidebar metrics update to reflect your node and relationship counts.
-3. **Query Terminal**: Type a question (e.g., *"What operating system competes with iOS?"*) into the text box and press **Ask Terminal** to view the response, query latency, and visual path trace.
+```bash
+python -m venv venv
+venv\Scripts\activate  
 ```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Create a `.env` file in the project root:
+
+```env
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_password
+NEO4J_DATABASE=neo4j
+
+OLLAMA_URL=https://ollama.com/api/generate
+MODEL_NAME=gpt-oss:120b-cloud
+OLLAMA_API_KEY=your_api_key
+```
+
+## How to Run
+
+1. Start Neo4j and confirm it is reachable.
+
+2. Start the backend from the project root:
+
+```bash
+uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+3. Serve the frontend (in a second terminal):
+
+```bash
+cd frontend
+python -m http.server 5500
+```
+
+4. Open [http://127.0.0.1:5500](http://127.0.0.1:5500) in your browser.
+
+
+## Folder Structure
+
+```
+GraphMind/
+├── backend/
+│   ├── main.py         
+│   ├── graph_build.py    
+│   ├── query_graph.py    
+│   ├── ollama_client.py  
+│   └── prompts.py        
+├── frontend/
+│   ├── index.html     
+│   ├── app.js            
+│   └── style.css        
+├── data/
+│   └── sample.txt       
+├── requirements.txt      
+└── .env                 
+```
+
+## API Endpoints
+
+| Method | Path               | Description                    |
+|--------|--------------------|--------------------------------|
+| GET    | `/health`          | Liveness check                 |
+| GET    | `/health/ready`    | Neo4j connectivity check       |
+| GET    | `/stats`           | Node and relationship counts   |
+| POST   | `/build-graph`     | Build from `data/sample.txt`   |
+| POST   | `/build-graph/text`| Build from pasted text         |
+| POST   | `/build-graph/pdf` | Build from uploaded PDF        |
+| POST   | `/chat`            | Ask a question                 |
