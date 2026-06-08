@@ -90,7 +90,7 @@ def get_stats():
 @app.post("/build-graph")
 def build_graph():
     file_path = os.path.join("data", "sample.txt")
-    if not os.path.exists(file_path)
+    if not os.path.exists(file_path):
         raise HTTPException(status_code = 404, detail = f"Data file not found at {file_path}") 
 
     with open(file_path,"r",encoding ="utf-8") as f:
