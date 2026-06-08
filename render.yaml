@@ -1,13 +1,15 @@
-services: 
+services:
   - type: web
     name: graphmind-api
     runtime: python
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT 
-    healthCheckPath: /health 
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
@@ -25,4 +27,4 @@ services:
       - key: MODEL_NAME
         sync: false
       - key: OLLAMA_API_KEY
-        sync:false
+        sync: false
