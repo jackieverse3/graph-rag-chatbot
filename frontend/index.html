@@ -1,27 +1,26 @@
 <!DOCTYPE html>
-<html lang = "en">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name = "viewport" content = "width=device.width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GraphMind</title>
     <link rel="stylesheet" href="style.css">
-</head>    
-
+</head>
 <body>
     <div class="app-layout">
-
+        
         <!-- SIDEBAR: Management, Database Info, and Real-Time Logs -->
-        <aside class = "sidebar">
+        <aside class="sidebar">
             <div class="brand">
-                <h2>GraphMind/h2>
+                <h2>GraphMind</h2>
             </div>
-
-            <!-- Database Monitor Panel-->
-             <div class = "panel">
+            
+            <!-- Database Monitor Panel -->
+            <div class="panel">
                 <h4>Database Status</h4>
-                <div class = "stats-grid">
-                    <div class = "stat-card">
-                        <span class = "stat-val" id="node-count">-</span>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-val" id="node-count">-</span>
                         <span class="stat-label">Nodes (Entities)</span>
                     </div>
                     <div class="stat-card">
@@ -30,7 +29,7 @@
                     </div>
                 </div>
                 <button id="refresh-stats-btn" class="btn btn-secondary">Refresh Stats</button>
-             </div>
+            </div>
 
             <!-- Graph Builder Control Panel -->
             <div class="panel">
@@ -70,129 +69,103 @@
                 <div id="build-status" class="status-msg hidden"></div>
             </div>
 
-              <!-- EXPANSION: Collapsible Source Text Viewer -->
-               <div class="panel corpus-panel">
+            <!-- EXPANSION: Collapsible Source Text Viewer -->
+            <div class="panel corpus-panel">
                 <div class="panel-header-toggle" id="corpus-toggle">
                     <h4>Active Source Text</h4>
                     <span class="toggle-arrow" id="corpus-arrow">▲</span>
                 </div>
                 <div class="corpus-content-wrapper" id="corpus-content-wrapper">
-                    <div class="corpus-box">
-                        <p><strong> Apple was founded</strong> by Steve Jobs, Steve Wozniak,
-                            and Ronald Wayne in 1976. Apple developed the Macintosh computer
-                            and later introduced the iPhone, which runs on the iOS operating system.</p>
-
-                        <p><strong>Google was founded</strong> by Larry Page 
-                        and Sergey Brin in 1998, developed the Android operating system 
-                    to compete with iOS. Google also acquired Youtube in 2006 to expand its video services.</p>    
-
-                    <p><strong>Microsoft was founded</strong>by Bill Gates and Paul Allen, developed
-                    the Windows operating system. Microsoft partnered with OpenAI, 
-                investing billions of dollars to support artificial intelligence 
-            development.</p>
-
-            <p><strong>OpenAI was led</strong>by CEO Sam Altman, developed the 
-            popular conversational AI model known as ChatGPT. Microsoft integrated
-        ChatGPT technology into its Bing search engine to challenge 
-    Google's dominance in search.</p>
-                    
+                    <div class="corpus-box" id="corpus-box">
+                        <p><strong>Apple was founded</strong> by Steve Jobs, Steve Wozniak, and Ronald Wayne in 1976. Apple developed the Macintosh computer and later introduced the iPhone, which runs on the iOS operating system.</p>
+                        <p><strong>Google was founded</strong> by Larry Page and Sergey Brin in 1998, developed the Android operating system to compete with iOS. Google also acquired YouTube in 2006 to expand its video services.</p>
+                        <p><strong>Microsoft was founded</strong> by Bill Gates and Paul Allen, developed the Windows operating system. Microsoft partnered with OpenAI, investing billions of dollars to support artificial intelligence development.</p>
+                        <p><strong>OpenAI was led</strong> by CEO Sam Altman, developed the popular conversational AI model known as ChatGPT. Microsoft integrated ChatGPT technology into its Bing search engine to challenge Google's dominance in search.</p>
                     </div>
                 </div>
-               </div>
+            </div>
 
-
-              <!-- Live Trace Logs-->
-               <div class = "panel live-logs-panel"
-                <h4> Execution Logs</h4>
-                <div class="trae-log" id="trace-log">
+            <!-- Live Trace Logs -->
+            <div class="panel live-logs-panel">
+                <h4>Execution Logs</h4>
+                <div class="trace-log" id="trace-log">
                     <div class="log-line system">[GraphMind] Ready to query.</div>
                 </div>
-
+            </div>
         </aside>
 
-
         <!-- MAIN WINDOW: Chat Playground & RAG Inspector -->
-         <main class="main-content">
+        <main class="main-content">
             <div class="terminal">
-
+                
                 <!-- Chat Input Section -->
-                 <section class="chat-entry">
+                <section class="chat-entry">
                     <h3>Ask Your Graph</h3>
-                    <p class="section-desc">The pipeline will resolve your entities,
-                        run paths across your Neo4j database, and ground the LLM's response 
-                        using the facts retrieved.
-                    </p>
+                    <p class="section-desc">The pipeline will resolve your entities, run paths across your Neo4j database, and ground the LLM's response using the facts retrieved.</p>
+                    
                     <div class="search-bar">
-                        <input type="text" id="question-input" placeholder="e.g., What operating system competes with iOS?">
+                        <input type="text" id="question-input" placeholder="e.g., What operating system competes with iOS?" />
                         <button id="ask-btn" class="btn btn-primary">Ask Terminal</button>
-
-                    <!-- EXPANSION- Clear Canvas Button-->
-                     <button id="clear-btn" class="btn btn-secondary">Clear</button>
+                        <!-- EXPANSION: Clear Canvas Button -->
+                        <button id="clear-btn" class="btn btn-secondary">Clear</button>
                     </div>
 
-                    <!-- Bookmarks / History Suggestions-->
-                     <div id="history-container" class="history-container hidden">
+                    <!-- Bookmarks / History suggestions -->
+                    <div id="history-container" class="history-container hidden">
+                        <!-- Javascript will append interactive pills here -->
+                    </div>
+                </section>
 
-                    <!--Javascript will append interactive pills here--> </div>
-                 </section>
+                <!-- Processing Spinner -->
+                <div id="loading" class="spinner-container hidden">
+                    <div class="spinner"></div>
+                    <span>Resolving entities & fetching database records...</span>
+                </div>
 
-                 <!-- Processing Spinner -->
-                  <div id="loading" class="spinner-container hidden">
-                    <div class="Spinner"></div>
-                    <span>Resolving entities & fetching database records... </span>
-                  </div>
-
-                  <!-- Outputs Section -->
-                   <section id="results-area" class="results-area hidden">
+                <!-- Outputs Section -->
+                <section id="results-area" class="results-area hidden">
                     
-                    <!-- Grounded Answer Block-->
-                     <div class = "result-block">
+                    <!-- Grounded Answer Block -->
+                    <div class="result-block">
                         <div class="block-header">
-                            <h4>Grounded Answer</h4>
-
-                            <!-- EXPANSION - Execution Performance Badge -->
-                             <span id="latency-badge" class="badge info hidden">Latency:0s</span>
+                            <div class="block-title-group">
+                                <h4>Grounded Answer</h4>
+                                <!-- EXPANSION: Execution Performance Badge -->
+                                <span id="latency-badge" class="badge info hidden">Latency: 0s</span>
                             </div>
                             <button id="copy-btn" class="btn btn-secondary btn-xs">Copy</button>
                         </div>
                         <div class="answer-box">
                             <p id="answer-text"></p>
                         </div>
-                     </div>
+                    </div>
 
-                     <!-- Visual Context Triples Deck-->
-                      <div class="result-block">
-                            <h4>Visual Knowledge Paths </h4>
-                            <p class="section-desc"> This is the visual 
-                                relationship trace of facts extracted from Neo4j for this 
-                                query:
-                            </p>
+                    <!-- Visual Context Triples Deck -->
+                    <div class="result-block" id="visual-paths-block">
+                        <h4>Visual Knowledge Paths</h4>
+                        <p class="section-desc">This is the visual relationship trace of facts extracted from Neo4j for this query:</p>
+                        <div id="visual-context-list" class="visual-context-list">
+                            <!-- Javascript will parse and append interactive visual cards here -->
+                        </div>
+                    </div>
 
-                                <div id="visual-context-list" class="visual-context-list">
-                                    
-                                    <!-- Javascript will parse and append
-                                     interactive visual cards here -->
-                                </div>
-                                </div>
+                    <!-- Raw Context Text Inspector -->
+                    <div class="result-block" id="raw-context-block">
+                        <div class="inspector-header">
+                            <h4>Raw System Context</h4>
+                            <span class="badge info">LLM input</span>
+                        </div>
+                        <p class="section-desc">This is the raw context string injected into the system prompt behind the scenes:</p>
+                        <pre class="context-code" id="context-text"></pre>
+                    </div>
+                    
+                </section>
 
-                                <!-- Raw Context Text Inspector-->
-                                 <div class="result-block">
-                                    <div class="inspector-header">
-                                        <h4>Raw System Context</h4>
-                                        <span class="badge info">LLM input</span>
-                                    </div>
-
-                                    <p class="section-desc"> This is the raw context string 
-                                        injected into the system prompt behind the scenes:
-                                    </p>
-
-                                    <pre class="context-code" id="context-text"></pre>
-                                 </div>
-                   </section>
             </div>
-         </main>
+        </main>
+
     </div>
-    <script src = "config.js"></script>
-    <script src="app.js"></script>     
+    <script src="config.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
