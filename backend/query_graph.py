@@ -48,13 +48,21 @@ def clean_answer(raw: str) -> str:
     return result
 
 def _fallback_extract(question: str) -> list:
-    """Extract capitalized word groups from the question as a last resort."""
+    """Extract capitalized word groups, or any key terms as a last resort."""
     # Grab sequences of capitalized words (e.g. 'Sam Altman', 'Apple', 'OpenAI')
     matches = re.findall(r'\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*)\b', question)
     # Filter out common question words
-    stopwords = {"Who", "What", "Where", "When", "Why", "How", "Which", "Is", "Are",
-                 "Did", "Does", "Do", "Was", "Were", "Has", "Have", "Can"}
-    results = [m for m in matches if m not in stopwords]
+    stopwords = {"who", "what", "where", "when", "why", "how", "which", "is", "are",
+                 "did", "does", "do", "was", "were", "has", "have", "can", "the", "a", 
+                 "an", "in", "on", "at", "for", "to", "of", "and", "or", "but", "with",
+                 "by", "about", "from", "created", "founded", "founded by", "creator"}
+    results = [m for m in matches if m.lower() not in stopwords]
+    
+    # If no capitalized words, extract any word that is not a stopword and is longer than 2 chars
+    if not results:
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', question)
+        results = [w for w in words if w.lower() not in stopwords]
+        
     print(f"Fallback entity extraction from question: {results}")
     return results
 
@@ -101,8 +109,10 @@ def get_graph_context(entities: list) -> str:
                 # This is why "Sam Altman" (a leaf/target node) was returning nothing.
                 result = session.run("""
                     MATCH (a:Entity)-[r]->(b:Entity)
-                    WHERE toLower(a.name) = toLower($entity)
-                       OR toLower(b.name) = toLower($entity)
+                    WHERE toLower(a.name) CONTAINS toLower($entity)
+                       OR toLower($entity) CONTAINS toLower(a.name)
+                       OR toLower(b.name) CONTAINS toLower($entity)
+                       OR toLower($entity) CONTAINS toLower(b.name)
                     RETURN a.name AS source, type(r) AS relation, b.name AS target
                 """, entity=entity)
 

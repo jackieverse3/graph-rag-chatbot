@@ -15,54 +15,76 @@ def sanitize_relation(relation: str) -> str:
     cleaned = cleaned.strip().replace(' ', '_').upper()
     return cleaned if cleaned else "RELATED_TO"
 
+def chunk_text(text: str, chunk_size: int = 4000, overlap: int = 500) -> list:
+    """Splits text into chunks of chunk_size with overlap."""
+    if len(text) <= chunk_size:
+        return [text]
+    
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+        # Stop if the next chunk would start beyond the end of the text
+        if start >= len(text):
+            break
+    return chunks
+
 def build_graph_from_text(text: str) -> bool:
-    """Extracts relationships from a text string via LLM, and inserts them into Neo4j."""
+    """Extracts relationships from a text string via LLM chunk by chunk, and inserts them into Neo4j."""
     if not text or not text.strip():
         print("Error: Empty text provided.")
         return False
 
-    # Get data from LLM
-    prompt = GRAPH_BUILD_PROMPT.format(text=text)
-    try:
-        response_text = query_ollama(prompt, json_mode=True)
-    except Exception as e:
-        print(f"LLM call failed during graph build: {e}")
-        return False
+    chunks = chunk_text(text)
+    print(f"Split text into {len(chunks)} chunks for graph building.")
 
-    # Clean LLM response if it accidentally wrapped JSON in markdown formatting
-    cleaned_response = response_text.strip()
-    if cleaned_response.startswith("```"):
-        cleaned_response = re.sub(r'^```(?:json)?\n|```$', '', cleaned_response, flags=re.MULTILINE).strip()
-
-    try:
-        triples = json.loads(cleaned_response)
-    except Exception as e:
-        print(f"JSON Parsing failed: {e}")
-        print(f"Raw Output was: {response_text}")
-        return False
-
-    # Insert into database
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     try:
         with driver.session(database=NEO4J_DATABASE) as session:
-            # For this MVP, we clear previous nodes before writing a new graph
+            # Clear previous nodes once before building a new graph
             session.run("MATCH (n) DETACH DELETE n")
-            print("Database cleared. Writing new relationships...")
+            print("Database cleared. Extracting and writing relationships...")
 
-            for item in triples:
-                source = item.get("source")
-                relation = item.get("relation")
-                target = item.get("target")
+            for i, chunk in enumerate(chunks):
+                print(f"Processing chunk {i+1}/{len(chunks)}...")
+                prompt = GRAPH_BUILD_PROMPT.format(text=chunk)
+                try:
+                    response_text = query_ollama(prompt, json_mode=True)
+                except Exception as e:
+                    print(f"LLM call failed for chunk {i+1}: {e}")
+                    continue
 
-                if source and relation and target:
-                    rel_type = sanitize_relation(relation)
-                    # Parameterize node names to prevent syntax errors, keeping label static as Entity
-                    query = f"""
-                    MERGE (s:Entity {{name: $source}})
-                    MERGE (t:Entity {{name: $target}})
-                    MERGE (s)-[r:{rel_type}]->(t)
-                    """
-                    session.run(query, source=source, target=target)
+                # Clean LLM response if it accidentally wrapped JSON in markdown formatting
+                cleaned_response = response_text.strip()
+                if cleaned_response.startswith("```"):
+                    cleaned_response = re.sub(r'^```(?:json)?\n|```$', '', cleaned_response, flags=re.MULTILINE).strip()
+
+                try:
+                    triples = json.loads(cleaned_response)
+                except Exception as e:
+                    print(f"JSON Parsing failed for chunk {i+1}: {e}")
+                    print(f"Raw Output was: {response_text}")
+                    continue
+
+                if not isinstance(triples, list):
+                    print(f"Expected a list of triples for chunk {i+1}, got {type(triples)}")
+                    continue
+
+                for item in triples:
+                    source = item.get("source")
+                    relation = item.get("relation")
+                    target = item.get("target")
+
+                    if source and relation and target:
+                        rel_type = sanitize_relation(relation)
+                        query = f"""
+                        MERGE (s:Entity {{name: $source}})
+                        MERGE (t:Entity {{name: $target}})
+                        MERGE (s)-[r:{rel_type}]->(t)
+                        """
+                        session.run(query, source=source, target=target)
         return True
     except Exception as e:
         print(f"Neo4j Write error: {e}")
